@@ -27,9 +27,9 @@
     vault_docker_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=kv/mental-health/docker:password') }}"
 
   roles:
-    # - backend
-    # - frontend
-    # - copy_k8files
+    - backend
+    - frontend
+    - copy_k8files
     - k8s_deploy
 
 - name: Verify Services
