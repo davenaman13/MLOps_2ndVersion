@@ -92,24 +92,24 @@ pipeline {
             }
         }
 
-        stage('Install Metrics Server') {
-            steps {
-                script {
-                    echo "Installing metrics server..."
-                    sh '''
-                        set -e
-                        kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-                        echo "Waiting for metrics-server rollout..."
-                        # Wait for rollout to complete with a timeout fallback
-                        kubectl rollout status deployment metrics-server -n kube-system --timeout=120s || {
-                            echo "Rollout timed out. Check 'kubectl describe deployment metrics-server -n kube-system' and pod logs for details.";
-                            exit 1;
-                        }
-                        echo "Metrics Server installed successfully."
-                    '''
-                }
-            }
-        }
+        // stage('Install Metrics Server') {
+        //     steps {
+        //         script {
+        //             echo "Installing metrics server..."
+        //             sh '''
+        //                 set -e
+        //                 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+        //                 echo "Waiting for metrics-server rollout..."
+        //                 # Wait for rollout to complete with a timeout fallback
+        //                 kubectl rollout status deployment metrics-server -n kube-system --timeout=120s || {
+        //                     echo "Rollout timed out. Check 'kubectl describe deployment metrics-server -n kube-system' and pod logs for details.";
+        //                     exit 1;
+        //                 }
+        //                 echo "Metrics Server installed successfully."
+        //             '''
+        //         }
+        //     }
+        // }
 
         stage('Verify HPA Status') {
             steps {
