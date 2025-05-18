@@ -118,8 +118,10 @@ pipeline {
 
     post {
         always {
-            sh 'docker logout || true'
-            cleanWs()
+            node {
+                sh 'docker logout || true'
+                cleanWs()
+            }
         }
         success {
             // Optional: Remove or update if Slack is not set up
