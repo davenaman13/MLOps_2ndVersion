@@ -19,8 +19,8 @@
     kubeconfig_path: "{{ '~/.kube/config' if not is_jenkins else '/var/lib/jenkins/.kube/config' }}"
 
     # Container ports
-    backend_port: 5001
-    frontend_port: 5003
+    backend_port: 31544 #NodePort for backend
+    frontend_port: 31545 #Nodeport for frontend
 
     # Vault secret lookups
     vault_docker_username: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=kv/mental-health/docker:username') }}"
