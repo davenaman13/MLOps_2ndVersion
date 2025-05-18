@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        VAULT_ADDR = 'http://127.0.0.1:8200'                // Vault address
-        VAULT_TOKEN = credentials('vault-token')            // Jenkins credential ID for Vault token
+        VAULT_ADDR = 'http://127.0.0.1:8200'
+        VAULT_TOKEN = credentials('vault-token')
 
-        BACKEND_SERVICE = 'mental-health-backend'
-        FRONTEND_SERVICE = 'mental-health-frontend'
+        BACKEND_SERVICE = 'mental-health-backend-service'
+        FRONTEND_SERVICE = 'mental-health-frontend-service'
         BACKEND_PORT = '5001'
         FRONTEND_PORT = '5003'
         K8S_NAMESPACE = 'default'
@@ -25,8 +25,6 @@ pipeline {
                 )
             }
         }
-        
-// merged the 2 stages into one and resolved docker login pipeline failure due to vault
 
         stage('Fetch Secrets & Docker Login') {
             steps {
@@ -47,7 +45,6 @@ pipeline {
                         '''
                     }
 
-                    // Persist credentials to use in next stages
                     env.DOCKER_USERNAME = dockerUsername
                     env.DOCKER_PASSWORD = dockerPassword
                 }
@@ -99,6 +96,9 @@ pipeline {
             steps {
                 script {
                     sh """
+                        echo "Starting port-forward for backend..."
+                        nohup kubectl port-forward svc/${BACKEND_SERVICE} ${BACKEND_PORT}:${BACKEND_PORT} --namespace=${K8S_NAMESPACE} > /tmp/backend-portforward.log 2>&1 &
+                        sleep 10
                         curl --retry 10 --retry-delay 5 http://localhost:${BACKEND_PORT}/health || exit 1
                     """
                 }
@@ -109,6 +109,9 @@ pipeline {
             steps {
                 script {
                     sh """
+                        echo "Starting port-forward for frontend..."
+                        nohup kubectl port-forward svc/${FRONTEND_SERVICE} ${FRONTEND_PORT}:${FRONTEND_PORT} --namespace=${K8S_NAMESPACE} > /tmp/frontend-portforward.log 2>&1 &
+                        sleep 10
                         curl --retry 10 --retry-delay 5 http://localhost:${FRONTEND_PORT} || exit 1
                     """
                 }
@@ -118,11 +121,15 @@ pipeline {
 
     post {
         always {
-                sh 'docker logout || true'
-                cleanWs()
+            echo 'Cleaning up port-forwarding and workspace...'
+            sh '''
+                pkill -f "kubectl port-forward svc/${BACKEND_SERVICE}"
+                pkill -f "kubectl port-forward svc/${FRONTEND_SERVICE}"
+                docker logout || true
+            '''
+            cleanWs()
         }
         success {
-            // Optional: Remove or update if Slack is not set up
             echo "Deployment Successful!"
         }
         failure {
