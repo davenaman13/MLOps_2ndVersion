@@ -1,0 +1,30 @@
+---
+- name: Deploy Backend to Kubernetes
+  command:
+    cmd: kubectl apply -f /opt/mental-health/kubernetes/backend-deployment.yml --validate=false
+  become: no
+
+- name: Deploy Backend Service to Kubernetes
+  command:
+    cmd: kubectl apply -f /opt/mental-health/kubernetes/backend-service.yml
+  become: no
+
+- name: Deploy Frontend to Kubernetes
+  command:
+    cmd: kubectl apply -f /opt/mental-health/kubernetes/frontend-deployment.yml
+  become: no
+
+- name: Deploy Frontend Service to Kubernetes
+  command:
+    cmd: kubectl apply -f /opt/mental-health/kubernetes/frontend-service.yml
+  become: no
+
+# - name: Deploy ingress
+#   command: kubectl apply -f /opt/mental-health/kubernetes/ingress.yml --validate=false
+
+- name: Deploy Backend HPA
+  command: kubectl apply -f {{ deploy_path }}/kubernetes/backend-hpa.yml --kubeconfig={{ kubeconfig_path }}
+
+- name: Deploy Frontend HPA
+  command: kubectl apply -f {{ deploy_path }}/kubernetes/frontend-hpa.yml --kubeconfig={{ kubeconfig_path }}
+

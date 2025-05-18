@@ -1,0 +1,20 @@
+---
+- name: Create backend directory
+  file:
+    path: "{{ deploy_path }}/backend"
+    state: directory
+    mode: '0755'
+
+- name: Ensure /app/backend directory exists
+  file:
+    path: /app/backend
+    state: directory
+    mode: '0755'
+
+- name: Copy backend files
+  copy:
+    src: "{{ playbook_dir }}/../backend"
+    dest: /app/backend
+
+
+

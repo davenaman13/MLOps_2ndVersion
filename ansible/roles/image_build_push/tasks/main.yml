@@ -1,0 +1,14 @@
+---
+- name: Build backend Docker image
+  community.docker.docker_image:
+    name: "{{ backend_image }}"
+    build:
+      path: "{{ playbook_dir }}/../backend"
+    push: yes
+
+- name: Build frontend Docker image
+  community.docker.docker_image:
+    name: "{{ frontend_image }}"
+    build:
+      path: "{{ playbook_dir }}/../frontend"
+    push: yes

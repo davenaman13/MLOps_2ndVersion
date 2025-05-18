@@ -1,0 +1,41 @@
+---
+- name: Verify kubernetes directory exists
+  stat:
+    path: "{{ k8s_dir }}"
+  register: k8s_dir_stat
+
+- name: Fail if kubernetes directory is missing
+  fail:
+    msg: "Kubernetes directory not found at {{ k8s_dir }}"
+  when: not k8s_dir_stat.stat.exists
+
+- name: Get list of required kubernetes files
+  set_fact:
+    required_k8s_files:
+      - backend-deployment.yml
+      - backend-service.yml
+      - frontend-deployment.yml
+      - frontend-service.yml
+      - ingress.yml
+      - backend-hpa.yml
+      - frontend-hpa.yml
+
+- name: Verify all required kubernetes files exist
+  assert:
+    that:
+      - lookup('file', k8s_dir + '/' + item) != ''
+    fail_msg: "Missing required kubernetes file: {{ item }} in {{ k8s_dir }}"
+  loop: "{{ required_k8s_files }}"
+
+- name: Create target kubernetes directory
+  file:
+    path: "{{ deploy_path }}/kubernetes"
+    state: directory
+    mode: '0755'
+
+- name: Copy kubernetes manifests
+  copy:
+    src: "{{ k8s_dir }}/{{ item }}"
+    dest: "{{ deploy_path }}/kubernetes/{{ item }}"
+    remote_src: no
+  loop: "{{ required_k8s_files }}"

@@ -1,0 +1,132 @@
+pipeline {
+    agent any
+
+    environment {
+        VAULT_ADDR = 'http://127.0.0.1:8200'                // Vault address
+        VAULT_TOKEN = credentials('vault-token')            // Jenkins credential ID for Vault token
+
+        BACKEND_SERVICE = 'mental-health-backend'
+        FRONTEND_SERVICE = 'mental-health-frontend'
+        BACKEND_PORT = '5001'
+        FRONTEND_PORT = '5003'
+        K8S_NAMESPACE = 'default'
+        ANSIBLE_PLAYBOOK_PATH = 'ansible/playbook.yml'
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git(
+                    url: 'https://github.com/TanviKulkarni02/MLops_mentalhealth_riskprediction.git',
+                    branch: 'main',
+                    changelog: false,
+                    poll: false
+                )
+            }
+        }
+        
+// merged the 2 stages into one and resolved docker login pipeline failure due to vault
+
+        stage('Fetch Secrets & Docker Login') {
+            steps {
+                script {
+                    def dockerUsername = sh(script: "vault kv get -field=username kv/mental-health/docker", returnStdout: true).trim()
+                    def dockerPassword = sh(script: "vault kv get -field=password kv/mental-health/docker", returnStdout: true).trim()
+
+                    if (!dockerUsername || !dockerPassword) {
+                        error "Vault returned empty docker credentials!"
+                    }
+
+                    echo "Fetched DOCKER_USERNAME: ${dockerUsername}"
+                    echo "Logging in to Docker..."
+
+                    withEnv(["DOCKER_USERNAME=${dockerUsername}", "DOCKER_PASSWORD=${dockerPassword}"]) {
+                        sh '''
+                            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        '''
+                    }
+
+                    // Persist credentials to use in next stages
+                    env.DOCKER_USERNAME = dockerUsername
+                    env.DOCKER_PASSWORD = dockerPassword
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    sh """
+                        docker build -t ${env.DOCKER_USERNAME}/${BACKEND_SERVICE}:${env.BUILD_ID} -f backend/Dockerfile backend/
+                        docker build -t ${env.DOCKER_USERNAME}/${FRONTEND_SERVICE}:${env.BUILD_ID} -f frontend/Dockerfile frontend/
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                script {
+                    sh """
+                        docker push ${env.DOCKER_USERNAME}/${BACKEND_SERVICE}:${env.BUILD_ID}
+                        docker push ${env.DOCKER_USERNAME}/${FRONTEND_SERVICE}:${env.BUILD_ID}
+                    """
+                }
+            }
+        }
+
+        stage('Debug Workspace') {
+            steps {
+                script {
+                    echo "Current workspace: ${WORKSPACE}"
+                    sh "ls -R ${WORKSPACE}"
+                }
+            }
+        }
+
+        stage('Deploy with Ansible') {
+            steps {
+                script {
+                    sh """
+                        ansible-playbook -i ${WORKSPACE}/ansible/inventory.ini ${WORKSPACE}/ansible/playbook.yml
+                    """
+                }
+            }
+        }
+
+        stage('Verify Backend Health') {
+            steps {
+                script {
+                    sh """
+                        curl --retry 10 --retry-delay 5 http://localhost:${BACKEND_PORT}/health || exit 1
+                    """
+                }
+            }
+        }
+
+        stage('Verify Frontend Availability') {
+            steps {
+                script {
+                    sh """
+                        curl --retry 10 --retry-delay 5 http://localhost:${FRONTEND_PORT} || exit 1
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker logout || true'
+            cleanWs()
+        }
+        success {
+            // Optional: Remove or update if Slack is not set up
+            echo "Deployment Successful!"
+        }
+        failure {
+            echo "Deployment Failed! Check Jenkins logs."
+        }
+    }
+}
