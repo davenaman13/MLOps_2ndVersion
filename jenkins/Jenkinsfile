@@ -92,6 +92,34 @@ pipeline {
             }
         }
 
+        stage('Install Metrics Server') {
+            steps {
+                script {
+                    echo "Installing metrics server..."
+                    sh '''
+                        kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+                        echo "Waiting for metrics-server rollout..."
+                        kubectl rollout status deployment metrics-server -n kube-system
+                        echo "Metrics Server installed successfully."
+                    '''
+                }
+            }
+        }
+
+        stage('Verify HPA Status') {
+            steps {
+                script {
+                    echo "Checking HPA metrics..."
+                    sh '''
+                        echo "Listing HPA objects:"
+                        kubectl get hpa
+                        echo "Pod Metrics:"
+                        kubectl top pods || echo "Metrics might not be available yet"
+                    '''
+                }
+            }
+        }
+
         stage('Verify Backend Health') {
             steps {
                 script {
