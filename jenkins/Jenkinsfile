@@ -18,7 +18,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git(
-                    url: 'https://github.com/TanviKulkarni02/MLops_mentalhealth_riskprediction.git',
+                    url: 'https://github.com/davenaman13/MLOps_2ndVersion.git',
                     branch: 'main',
                     changelog: false,
                     poll: false
