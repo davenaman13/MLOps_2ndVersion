@@ -6,6 +6,7 @@
 
   vars:
     # Dynamic project root detection
+    ansible_python_interpreter: /usr/bin/python3
     is_jenkins: "{{ lookup('env', 'JENKINS_HOME') is defined }}"
     project_root: >-
       {{
@@ -31,7 +32,7 @@
     - frontend
     - copy_k8files
     - k8s_deploy
-    - elk
+    - { role: elk, tags: ['elk'] }
 
 - name: Verify Services
   hosts: localhost

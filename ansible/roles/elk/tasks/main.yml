@@ -1,31 +1,35 @@
-- name: Create ELK namespace (if needed)
-  kubernetes.core.k8s:
-    api_version: v1
-    kind: Namespace
-    name: default
-    state: present
-
+---
 - name: Apply Elasticsearch deployment
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir }}/../kubernetes/elk/elasticsearch-deployment.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
 
 - name: Apply Kibana deployment
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir }}/../kubernetes/elk/kibana-deployment.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
 
 - name: Apply Logstash config
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir }}/../kubernetes/elk/logstash-configmap.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
 
 - name: Apply Logstash deployment
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir }}/../kubernetes/elk/logstash-deployment.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
 
 - name: Apply Filebeat daemonset
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir }}/../kubernetes/elk/filebeat-kubernetes.yaml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"

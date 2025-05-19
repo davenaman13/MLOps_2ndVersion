@@ -91,6 +91,17 @@ pipeline {
                 }
             }
         }
+        
+        stage('Deploy ELK Stack') {
+            steps {
+                script {
+                    echo "Deploying ELK Stack for centralized logging..."
+                    sh """
+                        ansible-playbook -i ${WORKSPACE}/ansible/inventory.ini ${WORKSPACE}/ansible/playbook.yml --tags elk
+                    """
+                }
+            }
+        }
 
         stage('Install Metrics Server') {
             steps {
@@ -117,6 +128,7 @@ pipeline {
                 }
             }
         }
+    
 
         stage('Verify Backend Health') {
             steps {
