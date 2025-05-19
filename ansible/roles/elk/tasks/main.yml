@@ -1,16 +1,34 @@
+---
+- name: Ensure ELK namespace exists
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: default
+    state: present
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+
 - name: Apply Elasticsearch deployment
   kubernetes.core.k8s:
     state: present
     src: "{{ playbook_dir }}/../kubernetes/elk/elasticsearch-deployment.yml"
     namespace: default
     kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+  register: es_deployment
+  until: es_deployment is succeeded
+  retries: 3
+  delay: 10
 
-- name: Apply Kibana deployment
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ playbook_dir }}/../kubernetes/elk/kibana-deployment.yml"
+- name: Verify Elasticsearch is running
+  kubernetes.core.k8s_info:
+    kind: Pod
     namespace: default
+    label_selectors:
+      - app=elasticsearch
     kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+  register: es_pods
+  until: es_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+  retries: 5
+  delay: 20
 
 - name: Apply Logstash config
   kubernetes.core.k8s:
@@ -25,6 +43,30 @@
     src: "{{ playbook_dir }}/../kubernetes/elk/logstash-deployment.yml"
     namespace: default
     kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+  when: es_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+
+- name: Apply Kibana deployment
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../kubernetes/elk/kibana-deployment.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+  when: es_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+
+
+- name: Apply Filebeat RBAC
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../kubernetes/elk/filebeat-rbac.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+
+- name: Apply Filebeat ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../kubernetes/elk/filebeat-configmap.yml"
+    namespace: default
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
 
 - name: Apply Filebeat daemonset
   kubernetes.core.k8s:
@@ -32,3 +74,16 @@
     src: "{{ playbook_dir }}/../kubernetes/elk/filebeat-kubernetes.yml"
     namespace: default
     kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+  when: es_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+
+- name: Verify Filebeat pods are running
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: default
+    label_selectors:
+      - k8s-app=filebeat
+    kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"
+  register: filebeat_pods
+  until: filebeat_pods.resources | selectattr('status.phase', 'equalto', 'Running') | list | length > 0
+  retries: 5
+  delay: 15
