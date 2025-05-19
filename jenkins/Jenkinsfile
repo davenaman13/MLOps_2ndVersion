@@ -86,17 +86,19 @@ pipeline {
             steps {
                 script {
                     sh """
+                        ansible-galaxy collection install kubernetes.core
                         ansible-playbook -i ${WORKSPACE}/ansible/inventory.ini ${WORKSPACE}/ansible/playbook.yml
                     """
                 }
             }
         }
-        
+
         stage('Deploy ELK Stack') {
             steps {
                 script {
                     echo "Deploying ELK Stack for centralized logging..."
                     sh """
+                        ansible-galaxy collection install kubernetes.core
                         ansible-playbook -i ${WORKSPACE}/ansible/inventory.ini ${WORKSPACE}/ansible/playbook.yml --tags elk
                     """
                 }
