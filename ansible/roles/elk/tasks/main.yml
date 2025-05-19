@@ -1,4 +1,3 @@
----
 - name: Apply Elasticsearch deployment
   kubernetes.core.k8s:
     state: present
