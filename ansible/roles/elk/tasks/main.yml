@@ -29,6 +29,6 @@
 - name: Apply Filebeat daemonset
   kubernetes.core.k8s:
     state: present
-    src: "{{ playbook_dir }}/../kubernetes/elk/filebeat-kubernetes.yaml"
+    src: "{{ playbook_dir }}/../kubernetes/elk/filebeat-kubernetes.yml"
     namespace: default
     kubeconfig: "{{ lookup('env','HOME') + '/.kube/config' }}"

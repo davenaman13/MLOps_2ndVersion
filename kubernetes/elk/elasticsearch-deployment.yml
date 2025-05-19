@@ -22,6 +22,15 @@ spec:
           env:
             - name: discovery.type
               value: single-node
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"  # Set Java heap size
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
 ---
 apiVersion: v1
 kind: Service
