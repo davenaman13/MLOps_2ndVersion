@@ -7,12 +7,10 @@ app = Flask(__name__)
 # --- Logging Setup ---
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s - %(message)s',
-    handlers=[
-        logging.FileHandler("frontend.log"),
-        logging.StreamHandler()
-    ]
+    format='%(asctime)s [%(levelname)s] %(name)s - %(message)s'
+    # Removed FileHandler
 )
+
 logger = logging.getLogger("frontend")
 # ----------------------
 
