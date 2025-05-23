@@ -7,7 +7,7 @@ services:
     container_name: mental-health-backend
     ports:
       - "5001:5001"
-    restart: always
+    restart: always 
 
   mental-health-frontend:
     build:
