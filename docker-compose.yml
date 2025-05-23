@@ -17,4 +17,4 @@ services:
       - "5003:5003"
     depends_on:
       - mental-health-backend
-    restart: always
+    restart: alway
