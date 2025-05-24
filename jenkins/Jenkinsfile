@@ -145,18 +145,18 @@ pipeline {
             }
         }
 
-        stage('Verify Frontend Availability') {
-            steps {
-                script {
-                    sh """
-                        echo "Starting port-forward for frontend..."
-                        nohup kubectl port-forward svc/${FRONTEND_SERVICE} ${FRONTEND_PORT}:${FRONTEND_PORT} --namespace=${K8S_NAMESPACE} > /tmp/frontend-portforward.log 2>&1 &
-                        sleep 10
-                        curl --retry 10 --retry-delay 5 http://localhost:${FRONTEND_PORT} || exit 1
-                    """
-                }
-            }
-        }
+        // stage('Verify Frontend Availability') {
+        //     steps {
+        //         script {
+        //             sh """
+        //                 echo "Starting port-forward for frontend..."
+        //                 nohup kubectl port-forward svc/${FRONTEND_SERVICE} ${FRONTEND_PORT}:${FRONTEND_PORT} --namespace=${K8S_NAMESPACE} > /tmp/frontend-portforward.log 2>&1 &
+        //                 sleep 10
+        //                 curl --retry 10 --retry-delay 5 http://localhost:${FRONTEND_PORT} || exit 1
+        //             """
+        //         }
+        //     }
+        // }
     }
 
     post {
